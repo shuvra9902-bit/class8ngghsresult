@@ -1,0 +1,6 @@
+{
+  "name": "Student Result Processor",
+  "description": "Professional grading engine and marksheet generator for Narayanganj Govt. Girls' High School.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

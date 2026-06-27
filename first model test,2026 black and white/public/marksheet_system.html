@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline Student Result Processor - Narayanganj Govt. Girls' High School</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            serif: ['Playfair Display', 'Georgia', 'serif'],
+            handwritten: ['Dancing Script', 'cursive']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Styling overrides for standard marksheet print */
+    @media print {
+      body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+      .no-print { display: none !important; }
+      .print-page { display: block !important; width: 210mm !important; height: 296mm !important; margin: 0 !important; padding: 15mm 18mm !important; box-shadow: none !important; border: none !important; page-break-after: always; overflow: hidden; }
+      .bar-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
+
+  <div id="app" class="no-print">
+    <!-- Navbar / Header -->
+    <header class="bg-indigo-950 text-white shadow-lg border-b border-indigo-900 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-3.5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-white/10 p-2 rounded-xl border border-white/15">
+            <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-black tracking-wider uppercase">Narayanganj Govt. Girls' High School</h1>
+            <p class="text-xs text-indigo-200 font-medium">Standalone Marksheet Engine & Student Compilation System</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 font-bold text-xs ring-1 ring-emerald-500/30 rounded-full flex items-center gap-1.5">
+            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+            Fully Web-Standalone File
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- App Body Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      
+      <!-- Primary Software Tabs Navigation -->
+      <div class="flex border-b border-slate-200 mb-6 gap-2">
+        <button id="tab-results" onclick="switchTab('results')" class="px-4 py-2 text-sm font-bold border-b-2 border-indigo-600 text-indigo-650 transition-all flex items-center gap-1.5">
+          📊 Compilation Results
+        </button>
+        <button id="tab-input" onclick="switchTab('input')" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-505 hover:text-slate-800 transition-all flex items-center gap-1.5">
+          ✍️ Marks Input Board
+        </button>
+        <button id="tab-students" onclick="switchTab('students')" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-505 hover:text-slate-800 transition-all flex items-center gap-1.5">
+          👥 Manage Students
+        </button>
+      </div>
+
+      <!-- TAB 1: Compilation Results -->
+      <section id="sector-results" class="space-y-6">
+        <!-- Filtering & Action Controls -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Shift filter</label>
+              <select id="res-shift-filter" onchange="renderResults()" class="px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-bold text-slate-700">
+                <option value="All">All Shifts</option>
+                <option value="Morning">Morning Shift</option>
+                <option value="Day">Day Shift</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Search student</label>
+              <input type="text" id="res-search-field" oninput="renderResults()" placeholder="Search by name or roll..." class="px-3 py-1.5 border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-bold text-slate-700 w-56">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Print Theme Palette</label>
+              <select id="res-theme-selector" class="px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-bold text-slate-700">
+                <option value="color">🎨 Colorful Layout</option>
+                <option value="bw">📓 Black & White Theme</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadTabulationSheet()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-750 font-bold rounded-lg text-sm border border-indigo-200 flex items-center gap-1.5 transition-colors">
+              📋 Save Ledger(.xls)
+            </button>
+            <button onclick="calculateResults()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg text-sm shadow flex items-center gap-1.5 transition-colors">
+              ⚡ Compute & Refresh Registers
+            </button>
+          </div>
+        </div>
+
+        <!-- Calculated Database Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider">Active Student Results Tabulation Registry</h3>
+            <span id="results-count-pills" class="px-2.5 py-1 bg-slate-200 text-slate-750 rounded-full text-xs font-extrabold">0 Registered Records</span>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-900 text-white uppercase tracking-wider font-extrabold">
+                  <th class="px-4 py-3 text-center w-12 border-r border-slate-800">Roll</th>
+                  <th class="px-4 py-3 border-r border-slate-800">Student Name</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">Class/Sec</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">Shift</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">Bangla (100)</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">English (100)</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">Math (100)</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800 bg-amber-500/10 text-amber-400">Combined Sci+BGS (100)</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">Grand Total</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">GPA</th>
+                  <th class="px-3 py-3 text-center border-r border-slate-800">Grade</th>
+                  <th class="px-4 py-3 text-center">Transcripts</th>
+                </tr>
+              </thead>
+              <tbody id="results-table-rows" class="divide-y divide-slate-150 font-semibold text-slate-700 text-center">
+                <!-- Rows injected dynamically -->
+              </tbody>
+            </table>
+            <div id="results-empty-state" class="py-12 text-center text-slate-400 font-medium font-semibold text-slate-450">
+              No compiled records. Click on 'Compute & Refresh Registers' to evaluate scores.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Marks Input Board -->
+      <section id="sector-input" class="hidden space-y-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-4 flex-wrap">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Active Shift</label>
+              <select id="input-shift-filter" onchange="renderInputBoard()" class="px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold text-slate-750">
+                <option value="All">All Shifts</option>
+                <option value="Morning">Morning Shift</option>
+                <option value="Day">Day Shift</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Selected Subject</label>
+              <select id="input-subject-selector" onchange="renderInputBoard()" class="px-3 py-2 border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold text-slate-750">
+                <option value="bangla">🇧🇩 Bangla (MCQ + CQ / 100)</option>
+                <option value="english">🇬🇧 English (CQ / 100)</option>
+                <option value="math">📐 Mathematics (MCQ + CQ / 100)</option>
+                <option value="science">🔬 Science (10 MCQ + 40 CQ / 50)</option>
+                <option value="bgs">🌍 Bangladesh & Global Studies (10 MCQ + 40 CQ / 50)</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="saveAllMarks()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-lg text-sm shadow flex items-center gap-1.5 transition-colors">
+            💾 Save Entered Marks
+          </button>
+        </div>
+
+        <!-- Input Table Sheet -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-755 uppercase tracking-wider">Dynamic Marks Registry Ledger</h3>
+            <span id="subject-label-pills" class="px-3 py-1 bg-indigo-50 text-indigo-750 border border-indigo-100 rounded-lg font-black text-xs">Bangla Input</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-900 text-white font-black uppercase text-center select-none">
+                  <th class="px-4 py-3 text-center border-r border-slate-800 w-16">Roll</th>
+                  <th class="px-4 py-3 text-left border-r border-slate-800 w-1/3">Student Name</th>
+                  <th class="px-3 py-3 border-r border-slate-800 w-24">Shift</th>
+                  <th class="px-3 py-3 border-r border-slate-800 w-32" id="th-mcq-label">MCQ Mark</th>
+                  <th class="px-3 py-3 border-r border-slate-800 w-32" id="th-creative-label">Creative (CQ) Mark</th>
+                  <th class="px-3 py-3 w-28">Total Mark</th>
+                </tr>
+              </thead>
+              <tbody id="input-table-rows" class="divide-y divide-slate-150 font-semibold text-slate-700 text-center">
+                <!-- Injected Rows -->
+              </tbody>
+            </table>
+            <div id="input-empty-state" class="py-12 text-center text-slate-400 font-medium select-none hidden">
+              No students found inside the selected filters. Go to 'Manage Students' tab to register students first.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: Manage Students -->
+      <section id="sector-students" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Add Student Form -->
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-fit">
+            <h3 class="text-base font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 mb-4">Add New Student</h3>
+            <form onsubmit="addNewStudent(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                <input type="text" id="add-name" required placeholder="Type student's full name" class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-semibold">
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll ID</label>
+                  <input type="number" id="add-roll" required placeholder="e.g. 1" class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-semibold">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Class</label>
+                  <select id="add-class" class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-semibold">
+                    <option value="6">Class Six</option>
+                    <option value="7">Class Seven</option>
+                    <option value="8">Class Eight</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Section</label>
+                  <select id="add-section" class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-semibold">
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Academic Shift</label>
+                  <select id="add-shift" class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-semibold">
+                    <option value="Morning">Morning Shift</option>
+                    <option value="Day">Day Shift</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white font-extrabold rounded-lg text-sm shadow hover:shadow-md transition-all cursor-pointer">
+                ➕ Registered Student
+              </button>
+            </form>
+          </div>
+
+          <!-- Existing Database List -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm lg:col-span-2">
+            <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider">Registered Student Database</h3>
+              <button onclick="clearAllStudents()" class="text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200/50 transition-colors cursor-pointer">
+                ⚠️ Reset Database
+              </button>
+            </div>
+
+            <div class="overflow-x-auto max-h-[450px] custom-scrollbar">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-900 text-white uppercase font-black text-center select-none">
+                    <th class="px-4 py-3 border-r border-slate-800 w-16">Roll</th>
+                    <th class="px-4 py-3 border-r border-slate-800 text-left">Student Name</th>
+                    <th class="px-3 py-3 border-r border-slate-800">Class</th>
+                    <th class="px-3 py-3 border-r border-slate-800">Section</th>
+                    <th class="px-3 py-3 border-r border-slate-800">Shift</th>
+                    <th class="px-4 py-3">Operations</th>
+                  </tr>
+                </thead>
+                <tbody id="students-table-rows" class="divide-y divide-slate-150 font-semibold text-slate-700 text-center">
+                  <!-- Registered records injected dynamically -->
+                </tbody>
+              </table>
+              <div id="students-empty-state" class="py-16 text-center text-slate-400 font-medium">
+                No students currently registered. Use the left form to add.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: Marksheet Visual Preview (Interactive) -->
+  <div id="preview-modal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto hidden">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-250 max-w-3xl w-full h-[90vh] my-auto relative flex flex-col animate-in fade-in duration-200">
+      
+      <!-- Modal headers -->
+      <div class="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+        <h2 class="text-base font-bold text-slate-800">Transcript Sheet Preview</h2>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 p-1.5 rounded-lg transition-colors cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Marksheet Printable Body -->
+      <div id="marksheet-printable-card" class="p-6 md:p-8 flex-grow overflow-y-auto space-y-5 relative select-none">
+        
+        <!-- Subtle watermark logo -->
+        <div class="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none z-0">
+          <img id="modal-watermark" src="https://z-cdn-media.chatglm.cn/files/81bcbc46-1942-4ae5-82f3-b47bcc90f921_Screenshot_2025-11-05_214918-removebg-preview.png?auth_key=1862791446-2232bbf5a92e4dd18e4bc625a9f1bb07-0-66301cdaf7f9b2d85a3f9478ecc8695f" alt="Watermark" class="w-[280px] h-[280px] opacity-[0.09] object-contain transition-all">
+        </div>
+
+        <!-- Head Institution Section -->
+        <div id="modal-header-block" class="relative border-b border-amber-500/20 pb-5 min-h-[90px] flex flex-col md:flex-row items-center justify-between gap-5 z-10">
+          <div class="flex-shrink-0">
+            <img id="modal-school-logo" src="https://z-cdn-media.chatglm.cn/files/81bcbc46-1942-4ae5-82f3-b47bcc90f921_Screenshot_2025-11-05_214918-removebg-preview.png?auth_key=1862791446-2232bbf5a92e4dd18e4bc625a9f1bb07-0-66301cdaf7f9b2d85a3f9478ecc8695f" alt="Logo" class="w-16 h-16 object-contain">
+          </div>
+          <div class="text-center flex-grow px-2 md:px-6">
+            <h1 id="modal-school-title" class="text-2xl font-bold text-indigo-950 uppercase tracking-widest font-sans">
+              Narayanganj Govt. Girls' High School
+            </h1>
+            <p id="modal-school-meta" class="text-[10px] font-extrabold text-amber-600 tracking-wider uppercase mt-1">
+              Estd: 1967 | EIIN: 112425
+            </p>
+            <h2 class="text-sm font-bold text-slate-705 tracking-wide uppercase mt-1.5">
+              Model Test - 1 Marksheet
+            </h2>
+            <p class="text-[11px] font-semibold text-slate-450">
+              Academic Session: 2026
+            </p>
+          </div>
+
+          <!-- GPA Wheel -->
+          <div class="relative w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center">
+            <svg width="76" height="76" viewBox="0 0 88 88" class="transform -rotate-90 absolute">
+              <circle cx="44" cy="44" r="36" fill="transparent" stroke="#f1f5f9" stroke-width="6" />
+              <circle id="modal-gpa-ring" cx="44" cy="44" r="36" fill="transparent" stroke="#10b981" stroke-width="6" stroke-dasharray="226.19" stroke-dashoffset="0" stroke-linecap="round" class="transition-all duration-700 ease-out" />
+            </svg>
+            <div class="relative flex flex-col items-center z-10 text-center">
+              <span id="modal-gpa-score" class="text-base font-extrabold text-slate-800 leading-none">5.00</span>
+              <span class="text-[8px] uppercase font-bold text-slate-450 mt-0.5">GPA</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student credentials grid (Double bold border) -->
+        <div id="modal-credentials-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50/70 p-4 border-[2.5px] border-indigo-950 rounded-xl z-10 relative">
+          <div class="flex justify-between border-b border-dashed border-slate-300 pb-1.5 px-1.5 text-sm">
+            <span class="font-bold text-slate-500">Name:</span>
+            <span id="modal-student-name" class="font-extrabold text-slate-950 text-base">-</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-slate-200 pb-1.5 px-1.5 text-sm">
+            <span class="font-semibold text-slate-450">Roll:</span>
+            <span id="modal-student-roll" class="font-bold text-slate-800">-</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-slate-200 pb-1.5 px-1.5 text-sm">
+            <span class="font-semibold text-slate-450">Class:</span>
+            <span id="modal-student-class" class="font-bold text-slate-800">-</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-slate-200 pb-1.5 px-1.5 text-sm">
+            <span class="font-semibold text-slate-450">Section:</span>
+            <span id="modal-student-section" class="font-bold text-slate-800">-</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-slate-200 pb-1.5 px-1.5 text-sm">
+            <span class="font-semibold text-slate-450">Shift:</span>
+            <span id="modal-student-shift" class="font-bold text-slate-800">-</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-slate-200 pb-1.5 px-1.5 text-sm">
+            <span class="font-semibold text-slate-450">Rank:</span>
+            <span id="modal-student-rank" class="font-extrabold text-amber-600">-</span>
+          </div>
+        </div>
+
+        <!-- Score table -->
+        <div id="modal-table-container" class="relative border-[2px] border-slate-400 rounded-lg overflow-hidden z-10">
+          <table class="w-full text-center border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-900 text-white font-bold text-xxs uppercase tracking-wider text-center">
+                <th class="px-3 py-2 text-left font-bold border-r border-slate-800 w-1/3">Subject</th>
+                <th class="px-2 py-2 border-r border-slate-800 w-16">MCQ</th>
+                <th class="px-2 py-2 border-r border-slate-800 w-16">Creative</th>
+                <th class="px-2 py-2 border-r border-slate-800 w-20">Total</th>
+                <th class="px-2 py-2 border-r border-slate-800 w-20 bg-amber-500/10 text-amber-305">Highest</th>
+                <th class="px-2 py-2 border-r border-slate-800 w-20">Grade</th>
+                <th class="px-2 py-2 w-16">Point</th>
+              </tr>
+            </thead>
+            <tbody id="modal-table-rows" class="divide-y divide-slate-300 font-extrabold text-slate-950 text-center">
+              <!-- Injected by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Grade Banner Summary -->
+        <div id="modal-summary-banner" class="bg-indigo-950 text-white p-4 rounded-xl border border-indigo-900 shadow-md relative z-10">
+          <div class="grid grid-cols-4 gap-4 text-center divide-x divide-indigo-800" id="modal-divide">
+            <div>
+              <p class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Grand Total</p>
+              <p class="text-base font-extrabold mt-1"><span id="sum-grand">-</span> <span class="text-xs font-normal opacity-70">/400</span></p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">GPA Score</p>
+              <p id="sum-gpa" class="text-base font-black mt-1 text-yellow-300">-</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Overall Grade</p>
+              <p id="sum-grade" class="text-base font-black mt-1 text-emerald-400">-</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Teacher Note</p>
+              <p id="sum-comment" class="text-xxs mt-1.5 font-bold line-clamp-1">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Graphical Side-by-side Chart -->
+        <div id="modal-chart-box" class="p-4 bg-slate-50 border border-slate-200 rounded-xl relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-black text-slate-500 uppercase tracking-wider">Performance metrics analysis</h3>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1">
+                <span id="legend-opt" class="w-2.5 h-2.5 rounded-sm bg-orange-500"></span>
+                <span class="text-[9px] font-bold text-slate-500">Obtained</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="legend-hig" class="w-2.5 h-2.5 rounded-sm bg-teal-850"></span>
+                <span class="text-[9px] font-bold text-slate-500">Highest</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-around items-end h-28 border-b border-slate-200" id="modal-graphs-track">
+            <!-- Dynamic graphical bars injected on execution -->
+          </div>
+        </div>
+
+        <!-- Signatures Block -->
+        <div class="flex justify-between items-end px-6 pt-5 relative z-10">
+          <div class="text-center w-1/3">
+            <div class="h-8 flex items-center justify-center mb-1">
+              <img src="https://z-cdn-media.chatglm.cn/files/3074d433-8c22-4df3-97e2-9cf07df0d39b_chinmoy.png" alt="" class="h-8 object-contain">
+            </div>
+            <div class="border-t border-slate-300 w-full mb-0.5"></div>
+            <p class="font-bold text-[10px] text-indigo-950 uppercase tracking-wide">Class Teacher</p>
+          </div>
+          <div class="text-center w-1/3">
+            <div class="h-8 flex items-center justify-center mb-1">
+              <img src="https://z-cdn-media.chatglm.cn/files/b3e538df-063d-43c3-a3ee-9767720333fa_sign.png" alt="" class="h-8 object-contain">
+            </div>
+            <div class="border-t border-slate-300 w-full mb-0.5"></div>
+            <p class="font-bold text-[10px] text-indigo-950 uppercase tracking-wide">Headmaster</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Action Row -->
+      <div class="bg-slate-50 p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 flex-shrink-0">
+        <!-- Palette theme switcher inside preview modal -->
+        <div class="flex items-center gap-2 bg-slate-200/60 p-1 rounded-lg">
+          <button id="modal-btn-color" onclick="setModalPrintTheme('color')" class="px-3 py-1.5 text-xs font-black rounded-md bg-white text-slate-900 shadow-sm cursor-pointer">
+            🎨 Colorful
+          </button>
+          <button id="modal-btn-bw" onclick="setModalPrintTheme('bw')" class="px-3 py-1.5 text-xs font-black rounded-md text-slate-655 hover:text-slate-900 cursor-pointer">
+            📓 Black & White
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="closeModal()" class="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 rounded-lg text-slate-700 text-sm font-semibold cursor-pointer">
+            Close Preview
+          </button>
+          <button onclick="printActiveMarksheet()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1.5 text-sm font-extrabold shadow cursor-pointer">
+            🖨️ Print Transcript
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PRINT-ONLY VIEWPORT CONTAINER (Injected dynamically on windows print trigger) -->
+  <div id="print-canvas-outlet" class="hidden"></div>
+
+  <!-- MAIN SCRIPT CONTROLLER -->
+  <script>
+    // Initial Seed Database
+    const defaultStudents = [
+      { id: "s1", name: 'Anika Rahman', roll: 1, class: '6', section: 'A', shift: 'Morning' },
+      { id: "s2", name: 'Fabiha Bushra', roll: 2, class: '6', section: 'A', shift: 'Morning' },
+      { id: "s3", name: 'Nusrat Jahan', roll: 3, class: '6', section: 'B', shift: 'Day' },
+      { id: "s4", name: 'Lamia Islam', roll: 4, class: '6', section: 'B', shift: 'Day' },
+      { id: "s5", name: 'Sadia Sultana', roll: 5, class: '6', section: 'A', shift: 'Morning' }
+    ];
+
+    const defaultMarks = {
+      "s1": {
+        bangla: { mcq: 24, creative: 55 },
+        english: { mcq: 0, creative: 82 },
+        math: { mcq: 27, creative: 61 },
+        science: { mcq: 8, creative: 34 },
+        bgs: { mcq: 9, creative: 33 }
+      },
+      "s2": {
+        bangla: { mcq: 18, creative: 48 },
+        english: { mcq: 0, creative: 68 },
+        math: { mcq: 21, creative: 50 },
+        science: { mcq: 7, creative: 29 },
+        bgs: { mcq: 8, creative: 31 }
+      },
+      "s3": {
+        bangla: { mcq: 25, creative: 58 },
+        english: { mcq: 0, creative: 77 },
+        math: { mcq: 28, creative: 64 },
+        science: { mcq: 9, creative: 36 },
+        bgs: { mcq: 9, creative: 35 }
+      }
+    };
+
+    // State Variables
+    let students = JSON.parse(localStorage.getItem('standalone_students')) || defaultStudents;
+    let marks = JSON.parse(localStorage.getItem('standalone_marks')) || defaultMarks;
+    let computedResults = [];
+    let currentTab = 'results';
+    let currentInputSubject = 'bangla';
+    let activeStudentForPreview = null;
+    let activeModalTheme = 'color';
+
+    // Synchronize to LocalStorage
+    function syncStorage() {
+      localStorage.setItem('standalone_students', JSON.stringify(students));
+      localStorage.setItem('standalone_marks', JSON.stringify(marks));
+    }
+
+    // Switch Tab Panel
+    function switchTab(tabname) {
+      currentTab = tabname;
+      
+      const tabResultsBtn = document.getElementById('tab-results');
+      const tabInputBtn = document.getElementById('tab-input');
+      const tabStudentsBtn = document.getElementById('tab-students');
+
+      const secResults = document.getElementById('sector-results');
+      const secInput = document.getElementById('sector-input');
+      const secStudents = document.getElementById('sector-students');
+
+      // Styles reset
+      [tabResultsBtn, tabInputBtn, tabStudentsBtn].forEach(el => {
+        el.className = "px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5";
+      });
+      [secResults, secInput, secStudents].forEach(el => el.classList.add('hidden'));
+
+      if (tabname === 'results') {
+        tabResultsBtn.className = "px-4 py-2 text-sm font-bold border-b-2 border-indigo-600 text-indigo-655 transition-all flex items-center gap-1.5";
+        secResults.classList.remove('hidden');
+        calculateResults();
+      } else if (tabname === 'input') {
+        tabInputBtn.className = "px-4 py-2 text-sm font-bold border-b-2 border-indigo-600 text-indigo-655 transition-all flex items-center gap-1.5";
+        secInput.classList.remove('hidden');
+        renderInputBoard();
+      } else if (tabname === 'students') {
+        tabStudentsBtn.className = "px-4 py-2 text-sm font-bold border-b-2 border-indigo-600 text-indigo-650 transition-all flex items-center gap-1.5";
+        secStudents.classList.remove('hidden');
+        renderStudentManager();
+      }
+    }
+
+    // Standard Grading Logic Parser
+    function calcSubjectGrade(totalMark, subKey) {
+      if (totalMark < 33) return { grade: 'F', gp: 0.00 };
+      if (totalMark >= 80) return { grade: 'A+', gp: 5.00 };
+      if (totalMark >= 70) return { grade: 'A', gp: 4.00 };
+      if (totalMark >= 60) return { grade: 'A-', gp: 3.500 };
+      if (totalMark >= 50) return { grade: 'B', gp: 3.00 };
+      if (totalMark >= 40) return { grade: 'C', gp: 2.00 };
+      return { grade: 'D', gp: 1.00 };
+    }
+
+    function calculateResults() {
+      // Find highest totals for each subject
+      const subjectHighest = { bangla: 0, english: 0, math: 0, combined: 0, science: 0, bgs: 0 };
+      
+      students.forEach(st => {
+        const sm = marks[st.id] || {};
+        
+        const bTot = (sm.bangla?.mcq ?? 0) + (sm.bangla?.creative ?? 0);
+        const eTot = sm.english?.creative ?? 0;
+        const mTot = (sm.math?.mcq ?? 0) + (sm.math?.creative ?? 0);
+        
+        const sciTot = (sm.science?.mcq ?? 0) + (sm.science?.creative ?? 0);
+        const bgsTot = (sm.bgs?.mcq ?? 0) + (sm.bgs?.creative ?? 0);
+        const combinedVal = sciTot + bgsTot;
+
+        subjectHighest.bangla = Math.max(subjectHighest.bangla, bTot);
+        subjectHighest.english = Math.max(subjectHighest.english, eTot);
+        subjectHighest.math = Math.max(subjectHighest.math, mTot);
+        subjectHighest.science = Math.max(subjectHighest.science, sciTot);
+        subjectHighest.bgs = Math.max(subjectHighest.bgs, bgsTot);
+        subjectHighest.combined = Math.max(subjectHighest.combined, combinedVal);
+      });
+
+      computedResults = students.map(st => {
+        const sm = marks[st.id] || { bangla: {}, english: {}, math: {}, science: {}, bgs: {} };
+
+        const bTot = (sm.bangla?.mcq ?? 0) + (sm.bangla?.creative ?? 0);
+        const eTot = sm.english?.creative ?? 0;
+        const mTot = (sm.math?.mcq ?? 0) + (sm.math?.creative ?? 0);
+        
+        const sciTot = (sm.science?.mcq ?? 0) + (sm.science?.creative ?? 0);
+        const bgsTot = (sm.bgs?.mcq ?? 0) + (sm.bgs?.creative ?? 0);
+        const combTotal = sciTot + bgsTot;
+
+        // Process grading
+        const bGrad = calcSubjectGrade(bTot, 'bangla');
+        const eGrad = calcSubjectGrade(eTot, 'english');
+        const mGrad = calcSubjectGrade(mTot, 'math');
+        const combGrad = calcSubjectGrade(combTotal, 'science-bgs');
+
+        const subjectsProcessed = {
+          bangla: { mcq: sm.bangla?.mcq ?? 0, creative: sm.bangla?.creative ?? 0, total: bTot, grade: bGrad.grade, gp: bGrad.gp },
+          english: { mcq: 0, creative: sm.english?.creative ?? 0, total: eTot, grade: eGrad.grade, gp: eGrad.gp },
+          math: { mcq: sm.math?.mcq ?? 0, creative: sm.math?.creative ?? 0, total: mTot, grade: mGrad.grade, gp: mGrad.gp },
+          science: { mcq: sm.science?.mcq ?? 0, creative: sm.science?.creative ?? 0, total: sciTot },
+          bgs: { mcq: sm.bgs?.mcq ?? 0, creative: sm.bgs?.creative ?? 0, total: bgsTot }
+        };
+
+        const grandTotal = bTot + eTot + mTot + combTotal;
+        const listGps = [bGrad.gp, eGrad.gp, mGrad.gp, combGrad.gp];
+        const isFail = listGps.some(gp => gp === 0);
+        
+        const computedGpa = isFail ? 0.00 : (listGps.reduce((acc, curr) => acc + curr, 0) / 4);
+        
+        let finalLg = 'F';
+        if (!isFail) {
+          if (computedGpa >= 5.0) finalLg = 'A+';
+          else if (computedGpa >= 4.0) finalLg = 'A';
+          else if (computedGpa >= 3.5) finalLg = 'A-';
+          else if (computedGpa >= 3.0) finalLg = 'B';
+          else if (computedGpa >= 2.0) finalLg = 'C';
+          else if (computedGpa >= 1.0) finalLg = 'D';
+        }
+
+        return {
+          ...st,
+          subjects: subjectsProcessed,
+          combinedGrade: { total: combTotal, grade: combGrad.grade, gp: combGrad.gp },
+          grandTotal: grandTotal,
+          gpa: computedGpa,
+          finalGrade: finalLg,
+          highestMarks: {
+            bangla: subjectHighest.bangla,
+            english: subjectHighest.english,
+            math: subjectHighest.math,
+            science: subjectHighest.science,
+            bgs: subjectHighest.bgs,
+            combined: subjectHighest.combined
+          }
+        };
+      });
+
+      // Sort by gpa desc, grandTotal desc to compute class rank
+      computedResults.sort((a,b) => b.gpa - a.gpa || b.grandTotal - a.grandTotal);
+      computedResults.forEach((st, idx) => {
+        st.rank = idx + 1;
+      });
+
+      renderResults();
+    }
+
+    // Render tabulation results table
+    function renderResults() {
+      const shiftFilter = document.getElementById('res-shift-filter').value;
+      const searchVal = document.getElementById('res-search-field').value.toLowerCase();
+      
+      const tableRows = document.getElementById('results-table-rows');
+      const emptyState = document.getElementById('results-empty-state');
+      const counterPill = document.getElementById('results-count-pills');
+
+      tableRows.innerHTML = '';
+      
+      let matchedResults = computedResults;
+      if (shiftFilter !== 'All') {
+        matchedResults = matchedResults.filter(r => r.shift === shiftFilter);
+      }
+      if (searchVal.trim() !== '') {
+        matchedResults = matchedResults.filter(r => r.name.toLowerCase().includes(searchVal) || String(r.roll) === searchVal);
+      }
+
+      counterPill.textContent = `${matchedResults.length} Matched Profiles`;
+
+      if (matchedResults.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      
+      emptyState.classList.add('hidden');
+
+      matchedResults.forEach(student => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 text-center";
+        
+        const grClass = student.finalGrade === 'F' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100';
+
+        tr.innerHTML = `
+          <td class="px-3 py-2.5 font-bold border-r border-slate-100">${student.roll}</td>
+          <td class="px-4 py-2.5 text-left font-bold text-slate-900 border-r border-slate-100">${student.name}</td>
+          <td class="px-3 py-2.5 border-r border-slate-100 text-slate-550">${student.class}-${student.section}</td>
+          <td class="px-3 py-2.5 border-r border-slate-100 text-slate-550">${student.shift}</td>
+          <td class="px-3 py-2.5 border-r border-slate-100 font-bold">${student.subjects.bangla.total} <span class="text-[9px] text-slate-400">(${student.subjects.bangla.grade})</span></td>
+          <td class="px-3 py-2.5 border-r border-slate-100 font-bold">${student.subjects.english.total} <span class="text-[9px] text-slate-400">(${student.subjects.english.grade})</span></td>
+          <td class="px-3 py-2.5 border-r border-slate-100 font-bold">${student.subjects.math.total} <span class="text-[9px] text-slate-400">(${student.subjects.math.grade})</span></td>
+          <td class="px-3 py-2.5 border-r border-slate-100 font-bold bg-amber-500/[0.02] text-amber-950">${student.combinedGrade.total} <span class="text-[9px] text-slate-400 font-extrabold">(${student.combinedGrade.grade})</span></td>
+          <td class="px-3 py-2.5 border-r border-slate-100 font-black text-slate-900">${student.grandTotal}</td>
+          <td class="px-3 py-2.5 border-r border-slate-100 font-black text-blue-650">${student.gpa.toFixed(2)}</td>
+          <td class="px-3 py-2.5 border-r border-slate-100">
+            <span class="px-2 py-0.5 rounded-full font-black text-3xs border ${grClass}">${student.finalGrade}</span>
+          </td>
+          <td class="px-4 py-2.5 text-center flex items-center justify-center gap-1.5">
+            <button onclick="previewStudentMarksheet('${student.id}')" class="p-1 px-2.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded font-bold text-xxs transition-all cursor-pointer">Preview</button>
+            <button onclick="downloadSingleMarksheet('${student.id}')" class="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded transition-colors cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+        tableRows.appendChild(tr);
+      });
+    }
+
+    // Render Marks Input Grid Board
+    function renderInputBoard() {
+      const activeSubKey = document.getElementById('input-subject-selector').value;
+      currentInputSubject = activeSubKey;
+      
+      const shiftFilter = document.getElementById('input-shift-filter').value;
+      const thMcq = document.getElementById('th-mcq-label');
+      const thCreative = document.getElementById('th-creative-label');
+      const tableRows = document.getElementById('input-table-rows');
+      const emptyState = document.getElementById('input-empty-state');
+      const subPill = document.getElementById('subject-label-pills');
+
+      tableRows.innerHTML = '';
+
+      // Set label references
+      const labels = {
+        bangla: { text: 'Bangla Marks', mcq: 'MCQ (max 30)', creative: 'Creative (max 70)' },
+        english: { text: 'English Marks', mcq: 'MCQ (Not Applicable)', creative: 'Creative Writing (max 100)' },
+        math: { text: 'Mathematics Marks', mcq: 'MCQ (max 30)', creative: 'Creative (max 70)' },
+        science: { text: 'Science Scope Marks', mcq: 'MCQ (max 10)', creative: 'Creative (max 40)' },
+        bgs: { text: 'BGS Scope Marks', mcq: 'MCQ (max 10)', creative: 'Creative (max 40)' }
+      };
+
+      const subjMeta = labels[activeSubKey];
+      subPill.textContent = subjMeta.text;
+      thMcq.textContent = subjMeta.mcq;
+      thCreative.textContent = subjMeta.creative;
+
+      let matchedStudents = students;
+      if (shiftFilter !== 'All') {
+        matchedStudents = matchedStudents.filter(s => s.shift === shiftFilter);
+      }
+
+      if (matchedStudents.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      // Sort by roll to input step-by-step
+      matchedStudents.sort((a,b) => a.roll - b.roll);
+
+      matchedStudents.forEach(st => {
+        const sm = marks[st.id] || {};
+        const subData = sm[activeSubKey] || { mcq: 0, creative: 0 };
+        
+        const totalSum = (activeSubKey === 'english') ? subData.creative : (subData.mcq + subData.creative);
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/50 text-center";
+
+        const mcqDisabled = activeSubKey === 'english' ? 'disabled bg-slate-100 cursor-not-allowed' : '';
+        const mcqValMax = activeSubKey === 'science' || activeSubKey === 'bgs' ? 10 : 30;
+        const creativeValMax = activeSubKey === 'english' ? 100 : activeSubKey === 'science' || activeSubKey === 'bgs' ? 40 : 70;
+
+        tr.innerHTML = `
+          <td class="px-4 py-2 font-bold border-r border-slate-150">${st.roll}</td>
+          <td class="px-4 py-2 text-left font-extrabold text-slate-800 border-r border-slate-150">${st.name}</td>
+          <td class="px-3 py-2 border-r border-slate-150 text-slate-550">${st.shift}</td>
+          <td class="px-4 py-2 border-r border-slate-150">
+            <input type="number" 
+              value="${activeSubKey === 'english' ? '' : (subData.mcq || 0)}" 
+              max="${mcqValMax}"
+              min="0"
+              ${mcqDisabled} 
+              oninput="recountTotalInline('${st.id}')"
+              id="mcq-${st.id}"
+              class="w-24 px-2.5 py-1 border border-slate-200 outline-none focus:ring-1 focus:ring-blue-500 rounded text-center font-extrabold text-slate-900"
+            />
+          </td>
+          <td class="px-4 py-2 border-r border-slate-150">
+            <input type="number" 
+              value="${subData.creative || 0}" 
+              max="${creativeValMax}"
+              min="0"
+              oninput="recountTotalInline('${st.id}')"
+              id="cq-${st.id}"
+              class="w-24 px-2.5 py-1 border border-slate-200 outline-none focus:ring-1 focus:ring-blue-500 rounded text-center font-extrabold text-slate-900"
+            />
+          </td>
+          <td class="px-4 py-2 font-black text-slate-955 text-sm" id="total-${st.id}">
+            ${totalSum}
+          </td>
+        `;
+
+        tableRows.appendChild(tr);
+      });
+    }
+
+    function recountTotalInline(studentId) {
+      const activeSubKey = currentInputSubject;
+      const mcqEl = document.getElementById(`mcq-${studentId}`);
+      const cqEl = document.getElementById(`cq-${studentId}`);
+      const totalEl = document.getElementById(`total-${studentId}`);
+
+      const mcqVal = activeSubKey === 'english' ? 0 : parseInt(mcqEl.value) || 0;
+      const cqVal = parseInt(cqEl.value) || 0;
+      totalEl.textContent = mcqVal + cqVal;
+    }
+
+    // Save All Marks Inside Board
+    function saveAllMarks() {
+      const activeSubKey = currentInputSubject;
+      let count = 0;
+
+      students.forEach(st => {
+        const mcqEl = document.getElementById(`mcq-${st.id}`);
+        const cqEl = document.getElementById(`cq-${st.id}`);
+
+        if (cqEl) {
+          const mcqVal = activeSubKey === 'english' ? 0 : parseInt(mcqEl.value) || 0;
+          const cqVal = parseInt(cqEl.value) || 0;
+
+          if (!marks[st.id]) marks[st.id] = {};
+          marks[st.id][activeSubKey] = { mcq: mcqVal, creative: cqVal };
+          count++;
+        }
+      });
+
+      syncStorage();
+      alert(`Success! Saved ${count} register grades for subject track.`);
+      calculateResults();
+    }
+
+    // Student Database manager section
+    function renderStudentManager() {
+      const tableRows = document.getElementById('students-table-rows');
+      const emptyState = document.getElementById('students-empty-state');
+      tableRows.innerHTML = '';
+
+      if (students.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      // Sort by roll
+      students.sort((a,b) => a.roll - b.roll);
+
+      students.forEach(st => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/50 text-center text-xs";
+
+        tr.innerHTML = `
+          <td class="px-4 py-2.5 font-bold border-r border-slate-150">${st.roll}</td>
+          <td class="px-4 py-2.5 text-left font-extrabold text-slate-850 border-r border-slate-150">${st.name}</td>
+          <td class="px-3 py-2.5 border-r border-slate-150">${st.class}</td>
+          <td class="px-3 py-2.5 border-r border-slate-150">${st.section}</td>
+          <td class="px-3 py-2.5 border-r border-slate-150">${st.shift}</td>
+          <td class="px-4 py-2.5">
+            <button onclick="removeStudent('${st.id}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1 px-2.5 border border-red-200 rounded font-extrabold text-xxs transition-colors cursor-pointer">
+              Delete Profile
+            </button>
+          </td>
+        `;
+        tableRows.appendChild(tr);
+      });
+    }
+
+    function addNewStudent(e) {
+      e.preventDefault();
+      const name = document.getElementById('add-name').value;
+      const roll = parseInt(document.getElementById('add-roll').value);
+      const classVal = document.getElementById('add-class').value;
+      const section = document.getElementById('add-section').value;
+      const shift = document.getElementById('add-shift').value;
+
+      // Duplicate Roll check inside Section/Shift
+      const hasDuplicate = students.some(st => st.roll === roll && st.section === section && st.shift === shift);
+      if (hasDuplicate) {
+        alert(`Failed! Roll #${roll} already exists inside shift ${shift}, Section ${section}.`);
+        return;
+      }
+
+      const id = 's_' + Date.now();
+      students.push({ id, name, roll, class: classVal, section, shift });
+      
+      // Seed default blank marks
+      marks[id] = {
+        bangla: { mcq: 0, creative: 0 },
+        english: { mcq: 0, creative: 0 },
+        math: { mcq: 0, creative: 0 },
+        science: { mcq: 0, creative: 0 },
+        bgs: { mcq: 0, creative: 0 }
+      };
+
+      syncStorage();
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-roll').value = '';
+
+      renderStudentManager();
+      alert('Roll successfully recorded in Registry!');
+    }
+
+    function removeStudent(stId) {
+      if (confirm('Are you absolute sure you want to remove this record from registry? All scores will be dropped.')) {
+        students = students.filter(s => s.id !== stId);
+        delete marks[stId];
+        syncStorage();
+        renderStudentManager();
+      }
+    }
+
+    // Modal view theme switcher logic
+    function setModalPrintTheme(theme) {
+      activeModalTheme = theme;
+      
+      const btnColor = document.getElementById('modal-btn-color');
+      const btnBw = document.getElementById('modal-btn-bw');
+
+      const modalPrintable = document.getElementById('marksheet-printable-card');
+      const watermark = document.getElementById('modal-watermark');
+      const textTitle = document.getElementById('modal-school-title');
+      const textMeta = document.getElementById('modal-school-meta');
+      const edge = document.getElementById('modal-header-block');
+      const credGrid = document.getElementById('modal-credentials-grid');
+      const tblBox = document.getElementById('modal-table-container');
+      const summaryBanner = document.getElementById('modal-summary-banner');
+      const summaryDivide = document.getElementById('modal-divide');
+      const chartBox = document.getElementById('modal-chart-box');
+      const legendOpt = document.getElementById('legend-opt');
+      const legendHig = document.getElementById('legend-hig');
+
+      if (theme === 'bw') {
+        btnBw.className = "px-3 py-1.5 text-xs font-black rounded-md bg-white text-slate-900 shadow-sm cursor-pointer";
+        btnColor.className = "px-3 py-1.5 text-xs font-black rounded-md text-slate-655 hover:text-slate-900 cursor-pointer";
+
+        modalPrintable.classList.add('bg-white');
+        watermark.className = "w-[280px] h-[280px] opacity-[0.03] grayscale object-contain transition-all";
+        textTitle.className = "text-2xl font-bold text-slate-950 uppercase tracking-widest font-sans";
+        textMeta.className = "text-[10px] font-extrabold text-slate-600 tracking-wider uppercase mt-1";
+        edge.className = "relative border-b border-slate-400 pb-5 min-h-[90px] flex flex-col md:flex-row items-center justify-between gap-5 z-10";
+        
+        credGrid.className = "grid grid-cols-2 lg:grid-cols-3 gap-3 bg-white border-[2.5px] border-slate-950 rounded-xl z-10 relative shadow-sm";
+        tblBox.className = "relative border-[2px] border-slate-955 rounded-lg overflow-hidden z-10";
+        summaryBanner.className = "bg-white text-slate-950 p-4 rounded-xl border-[2.2px] border-slate-955 shadow-sm relative z-10";
+        summaryDivide.className = "grid grid-cols-4 gap-4 text-center divide-x divide-slate-400";
+        chartBox.className = "p-4 bg-white border-[2.2px] border-slate-955 rounded-xl relative z-10 select-none shadow-none";
+        
+        legendOpt.className = "w-2.5 h-2.5 rounded-sm bg-slate-400";
+        legendHig.className = "w-2.5 h-2.5 rounded-sm bg-slate-955";
+      } else {
+        btnColor.className = "px-3 py-1.5 text-xs font-black rounded-md bg-white text-slate-900 shadow-sm cursor-pointer";
+        btnBw.className = "px-3 py-1.5 text-xs font-black rounded-md text-slate-655 hover:text-slate-900 cursor-pointer";
+
+        modalPrintable.classList.remove('bg-white');
+        watermark.className = "w-[280px] h-[280px] opacity-[0.09] object-contain transition-all";
+        textTitle.className = "text-2xl font-bold text-indigo-955 uppercase tracking-widest font-sans";
+        textMeta.className = "text-[10px] font-extrabold text-amber-600 tracking-wider uppercase mt-1";
+        edge.className = "relative border-b border-amber-500/20 pb-5 min-h-[90px] flex flex-col md:flex-row items-center justify-between gap-5 z-10";
+        
+        credGrid.className = "grid grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50/70 p-4 border-[2.5px] border-indigo-950 rounded-xl z-10 relative shadow-sm";
+        tblBox.className = "relative border-[2px] border-slate-400 rounded-lg overflow-hidden z-10";
+        summaryBanner.className = "bg-indigo-950 text-white p-4 rounded-xl border border-indigo-900 shadow-md relative z-10";
+        summaryDivide.className = "grid grid-cols-4 gap-4 text-center divide-x divide-indigo-800";
+        chartBox.className = "p-4 bg-slate-50/60 border border-slate-200 rounded-xl relative z-10 select-none shadow-sm";
+        
+        legendOpt.className = "w-2.5 h-2.5 rounded-sm bg-orange-500";
+        legendHig.className = "w-2.5 h-2.5 rounded-sm bg-teal-850";
+      }
+
+      // Re-trigger grades pill updates
+      if (activeStudentForPreview) {
+        renderModalTableAndGraph(activeStudentForPreview);
+      }
+    }
+
+    // Modal controllers
+    function previewStudentMarksheet(stId) {
+      const student = computedResults.find(r => r.id === stId);
+      if (!student) return;
+      
+      activeStudentForPreview = student;
+      
+      document.getElementById('modal-student-name').textContent = student.name;
+      document.getElementById('modal-student-roll').textContent = '#' + student.roll;
+      document.getElementById('modal-student-class').textContent = student.class;
+      document.getElementById('modal-student-section').textContent = student.section;
+      document.getElementById('modal-student-shift').textContent = student.shift;
+      document.getElementById('modal-student-rank').textContent = '#' + student.rank;
+
+      document.getElementById('modal-gpa-score').textContent = student.gpa.toFixed(2);
+      
+      // Calculate Ring Offset
+      const ring = document.getElementById('modal-gpa-ring');
+      const radius = 36;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference - (student.gpa / 5.0) * circumference;
+      ring.setAttribute('stroke-dashoffset', offset);
+
+      // Banner Summary fields
+      document.getElementById('sum-grand').textContent = student.grandTotal;
+      document.getElementById('sum-gpa').textContent = student.gpa.toFixed(2);
+      document.getElementById('sum-grade').textContent = student.finalGrade;
+      
+      const comment = student.gpa >= 5.0 ? 'Excellent' : 
+                      student.gpa >= 4.0 ? 'Good' : 
+                      student.gpa >= 3.5 ? 'Average' : 
+                      student.gpa >= 1.0 ? 'Needs Improvement' : 'Not Satisfactory';
+      document.getElementById('sum-comment').textContent = comment;
+
+      // Color/B&W parameters mapping reapply
+      setModalPrintTheme(activeModalTheme);
+
+      document.getElementById('preview-modal').classList.remove('hidden');
+    }
+
+    function renderModalTableAndGraph(student) {
+      const tbody = document.getElementById('modal-table-rows');
+      tbody.innerHTML = '';
+
+      const items = [
+        { label: 'Bangla', mcq: student.subjects.bangla.mcq, creative: student.subjects.bangla.creative, total: student.subjects.bangla.total, max: 100, highest: student.highestMarks.bangla, grade: student.subjects.bangla.grade, gp: student.subjects.bangla.gp },
+        { label: 'English', mcq: '-', creative: student.subjects.english.creative, total: student.subjects.english.total, max: 100, highest: student.highestMarks.english, grade: student.subjects.english.grade, gp: student.subjects.english.gp },
+        { label: 'Mathematics', mcq: student.subjects.math.mcq, creative: student.subjects.math.creative, total: student.subjects.math.total, max: 100, highest: student.highestMarks.math, grade: student.subjects.math.grade, gp: student.subjects.math.gp }
+      ];
+
+      function resolveClass(grade) {
+        if (activeModalTheme === 'bw') {
+          return 'bg-white text-slate-950 border-slate-950 font-extrabold';
+        }
+        switch (grade) {
+          case 'A+': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+          case 'A': return 'bg-blue-50 text-blue-700 border-blue-105';
+          case 'A-': return 'bg-indigo-50 text-indigo-700 border-indigo-105';
+          case 'B': return 'bg-amber-50 text-amber-700 border-amber-100';
+          case 'C': return 'bg-orange-50 text-orange-700 border-orange-100';
+          case 'D': return 'bg-slate-100 text-slate-700 border-slate-200';
+          default: return 'bg-red-50 text-red-700 border-red-150';
+        }
+      }
+
+      items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/50";
+        tr.innerHTML = `
+          <td class="px-4 py-2 border-r border-slate-300 text-left">${it.label}</td>
+          <td class="px-2 py-2 border-r border-slate-300 font-bold">${it.mcq}</td>
+          <td class="px-2 py-2 border-r border-slate-300 font-bold">${it.creative}</td>
+          <td class="px-2 py-2 border-r border-slate-300 font-black">${it.total}</td>
+          <td class="px-2 py-2 border-r border-slate-300 bg-amber-500/[0.04] text-amber-955">${it.highest}</td>
+          <td class="px-2 py-2 border-r border-slate-300">
+            <span class="px-2 py-0.5 rounded text-3xs border ${resolveClass(it.grade)}">${it.grade}</span>
+          </td>
+          <td class="px-2 py-2">${it.gp.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Special Combined Science + BGS rows
+      const combinedGripTr1 = document.createElement('tr');
+      combinedGripTr1.className = "hover:bg-slate-50/50";
+      combinedGripTr1.innerHTML = `
+        <td class="px-4 py-2 border-r border-slate-300 text-left">Science</td>
+        <td class="px-2 py-2 border-r border-slate-300 font-bold">${student.subjects.science.mcq}</td>
+        <td class="px-2 py-2 border-r border-slate-300 font-bold">${student.subjects.science.creative}</td>
+        <td class="px-2 py-2 border-r border-slate-300 font-black">${student.subjects.science.total}</td>
+        <td class="px-2 py-2 border-r border-slate-300 bg-amber-500/[0.04] text-amber-950">${student.highestMarks.science}</td>
+        <td class="px-2 py-2 border-r border-slate-300 align-middle" rowspan="2">
+          <div class="flex flex-col items-center justify-center gap-0.5">
+            <span class="px-2 py-0.5 rounded text-3xs border ${resolveClass(student.combinedGrade.grade)}">${student.combinedGrade.grade}</span>
+            <span class="text-[8px] text-slate-550 font-semibold leading-none opacity-80">(Combined/100)</span>
+          </div>
+        </td>
+        <td class="px-2 py-2 align-middle" rowspan="2">
+          <span class="text-xs font-black text-amber-950">${student.combinedGrade.gp.toFixed(2)}</span>
+        </td>
+      `;
+      tbody.appendChild(combinedGripTr1);
+
+      const combinedGripTr2 = document.createElement('tr');
+      combinedGripTr2.className = "hover:bg-slate-50/50";
+      combinedGripTr2.innerHTML = `
+        <td class="px-4 py-2 border-r border-slate-300 text-left">BGS</td>
+        <td class="px-2 py-2 border-r border-slate-300 font-bold">${student.subjects.bgs.mcq}</td>
+        <td class="px-2 py-2 border-r border-slate-300 font-bold">${student.subjects.bgs.creative}</td>
+        <td class="px-2 py-2 border-r border-slate-300 font-black">${student.subjects.bgs.total}</td>
+        <td class="px-2 py-2 border-r border-slate-300 bg-amber-500/[0.04] text-amber-950">${student.highestMarks.bgs}</td>
+      `;
+      tbody.appendChild(combinedGripTr2);
+
+      // Render Graph bar charts
+      const graphTrack = document.getElementById('modal-graphs-track');
+      graphTrack.innerHTML = '';
+
+      const barData = [
+        { label: 'Bangla', obtained: student.subjects.bangla.total, highest: student.highestMarks.bangla },
+        { label: 'English', obtained: student.subjects.english.total, highest: student.highestMarks.english },
+        { label: 'Math', obtained: student.subjects.math.total, highest: student.highestMarks.math },
+        { label: 'Sci & BGS', obtained: student.combinedGrade.total, highest: student.highestMarks.combined }
+      ];
+
+      const barColorClass = activeModalTheme === 'bw' ? 'bg-slate-400' : 'bg-orange-500';
+      const highestColorClass = activeModalTheme === 'bw' ? 'bg-slate-950' : 'bg-teal-850';
+
+      barData.forEach(d => {
+        const pctOb = Math.min((d.obtained / 100) * 100, 100);
+        const pctHi = Math.min((d.highest / 100) * 100, 100);
+
+        const group = document.createElement('div');
+        group.className = "flex flex-col items-center w-20 h-full relative";
+        
+        group.innerHTML = `
+          <div class="w-full h-full flex items-end justify-center gap-1.5 relative px-1">
+            <div class="w-4 rounded-t ${barColorClass} relative" style="height: ${pctOb}%">
+              <span class="absolute -top-4 left-0 right-0 text-center text-[8px] font-bold text-slate-800">${d.obtained}</span>
+            </div>
+            <div class="w-4 rounded-t ${highestColorClass} relative" style="height: ${pctHi}%">
+              <span class="absolute -top-4 left-0 right-0 text-center text-[8px] font-bold text-slate-800">${d.highest}</span>
+            </div>
+          </div>
+          <span class="mt-1 text-[9px] font-bold text-slate-500">${d.label}</span>
+        `;
+        graphTrack.appendChild(group);
+      });
+    }
+
+    function closeModal() {
+      document.getElementById('preview-modal').classList.add('hidden');
+      activeStudentForPreview = null;
+    }
+
+    // Build raw HTML document string for dynamic download
+    function compileSingleMarksheetHTML(student, theme = 'color') {
+      const gpaVal = student.gpa;
+      const radius = 36;
+      const circumference = 2 * Math.PI * radius;
+      const offsetVal = circumference - (gpaVal / 5.0) * circumference;
+
+      const wheelColor = theme === 'bw' ? '#000000' : (gpaVal >= 5.0 ? '#10b981' : gpaVal >= 4.0 ? '#3b82f6' : gpaVal >= 3.0 ? '#f59e0b' : '#ef4444');
+      const barColors = theme === 'bw' ? ['#64748b'] : ['#f97316'];
+      const highestBarColor = theme === 'bw' ? '#000000' : '#115e59';
+
+      const comment = gpaVal >= 5.0 ? 'Excellent' : 
+                      gpaVal >= 4.0 ? 'Good' : 
+                      gpaVal >= 3.5 ? 'Average' : 
+                      gpaVal >= 1.0 ? 'Needs Improvement' : 'Not Satisfactory';
+
+      const chartsData = [
+        { label: 'Bangla', obtained: student.subjects.bangla.total, highest: student.highestMarks.bangla },
+        { label: 'English', obtained: student.subjects.english.total, highest: student.highestMarks.english },
+        { label: 'Math', obtained: student.subjects.math.total, highest: student.highestMarks.math },
+        { label: 'Sci & BGS', obtained: student.combinedGrade.total, highest: student.highestMarks.combined }
+      ];
+
+      const graphsHTML = chartsData.map(d => {
+        const pctOb = Math.min((d.obtained / 100) * 100, 100);
+        const pctHi = Math.min((d.highest / 105) * 100, 100);
+        return `
+          <div class="bar-group">
+            <div class="bar-track">
+              <div class="bar-fill" style="height: ${pctOb}%; background-color: ${barColors[0]};">
+                 <span class="bar-value obtained">${d.obtained}</span>
+              </div>
+              <div class="bar-fill" style="height: ${pctHi}%; background-color: ${highestBarColor};">
+                 <span class="bar-value highest">${d.highest}</span>
+              </div>
+            </div>
+            <div class="bar-label">${d.label}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <title>Transcript - ${student.name}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700;850&display=swap" rel="stylesheet">
+          <style>
+            * { box-sizing: border-box; }
+            @page { margin: 0; size: A4; }
+            body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #cbd5e1; display: flex; justify-content: center; }
+            .sheet-container { width: 210mm; height: 296mm; background: #ffffff; padding: 15mm 18mm; position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+            .sheet-container::after { content: ''; position: absolute; top: 8mm; bottom: 8mm; left: 8mm; right: 8mm; border: 2.2px solid ${theme === 'bw' ? '#000000' : '#d97706'}; opacity: ${theme === 'bw' ? '0.12' : '0.15'}; pointer-events: none; z-index: 10; }
+            .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; opacity: ${theme === 'bw' ? '0.04' : '0.09'}; ${theme === 'bw' ? 'filter: grayscale(1);' : ''} pointer-events: none; z-index: 0; }
+            .header { text-align: center; position: relative; z-index: 1; padding-bottom: 12px; border-b: 1px solid #e2e8f0; margin-bottom: 5px; }
+            .logo { position: absolute; top: 5px; left: 0; width: 75px; height: 75px; object-fit: contain; }
+            .gpa-wheel-container { position: absolute; top: 5px; right: 0; width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+            .wheel-text { font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1; }
+            .wheel-label { font-size: 8px; color: #64748b; font-weight: 700; margin-top: 2px; text-transform: uppercase; }
+            .header h1 { margin: 0 90px; font-size: 21px; font-weight: 800; color: #0f172a; font-family: 'Playfair Display', serif; line-height: 1.2; text-transform: uppercase; letter-spacing: 1px; }
+            .school-meta { color: #b45309; font-weight: 752; font-size: 11px; margin: 5px 0; letter-spacing: 0.5px; }
+            .header h2 { margin: 3px 0; font-size: 14px; color: #334155; font-weight: 800; text-transform: uppercase; }
+            .header p.session-info { margin: 0; font-size: 12px; color: #64748b; font-weight: 600; }
+            .info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 30px; font-size: 13px; background: #f8fafc; padding: 12px 20px; border-radius: 8px; border: 2.2px solid ${theme === 'bw' ? '#000000' : '#0f172a'}; z-index: 1; position: relative; }
+            .info-item { display: flex; justify-content: space-between; border-bottom: 1px dashed #cbd5e1; padding-bottom: 2px; }
+            .info-label { font-weight: 600; color: #64748b; }
+            .info-val { font-weight: 850; color: #000000; }
+            .table-container { width: 100%; z-index: 1; position: relative; }
+            table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; border: 1.5px solid #0f172a; border-radius: 6px; overflow: hidden; }
+            th, td { padding: 8px; text-align: center; border-bottom: 1.5px solid #0f172a; border-right: 1.5px solid #0f172a; font-weight: 700; color: #000000; }
+            .last-col { border-right: none !important; }
+            th { background-color: #0f172a; font-weight: 800; color: #ffffff; text-transform: uppercase; font-size: 10px; border-bottom: 2px solid #0f172a; }
+            tr:last-child td { border-bottom: none; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            tr.combined-row { background-color: #fefacc; font-weight: 800; color: #78350f; }
+            .grade-pill { display: inline-block; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: 10px; }
+            .grade-A-plus { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+            .grade-A { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+            .grade-A-minus { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+            .grade-B { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+            .grade-C { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+            .grade-D { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+            .grade-F { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+            .summary { background: #0f172a; color: white; padding: 12px 25px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; z-index: 1; position: relative; }
+            .summary-item { display: flex; flex-direction: column; align-items: center; }
+            .summary-label { font-size: 9px; text-transform: uppercase; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
+            .summary-val { font-size: 18px; font-weight: 800; }
+            .graph-section { padding: 10px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; z-index: 1; position: relative; }
+            .graph-title { text-align: center; font-weight: 800; margin-bottom: 12px; font-size: 11px; color: #475569; text-transform: uppercase; }
+            .chart { display: flex; justify-content: space-around; align-items: flex-end; height: 100px; }
+            .bar-group { display: flex; flex-direction: column; align-items: center; height: 100%; width: 22%; }
+            .bar-track { display: flex; align-items: flex-end; justify-content: center; gap: 5px; flex-grow: 1; width: 100%; border-bottom: 1px solid #cbd5e1; }
+            .bar-fill { width: 16px; border-radius: 2px 2px 0 0; position: relative; min-height: 1px; }
+            .bar-value { position: absolute; top: -15px; width: 100%; text-align: center; font-size: 9px; font-weight: 800; }
+            .bar-value.obtained { color: #f97316; }
+            .bar-value.highest { color: #115e59; }
+            .bar-label { margin-top: 4px; font-size: 10px; font-weight: 750; color: #64748b; }
+            .signatures { display: flex; justify-content: space-between; padding: 0 40px; margin-bottom: 5mm; z-index: 1; position: relative; }
+            .sign { text-align: center; width: 30%; }
+            .sign-img { height: 42px; display: block; margin: 0 auto 3px auto; object-fit: contain; }
+            .sign-line { border-bottom: 1px solid #475569; height: 1px; margin-bottom: 4px; }
+            .sign-title { font-weight: 600; font-size: 11px; color: #0f172a; }
+            @media print {
+              body { padding: 0; margin: 0; display: block; background: #ffffff; }
+              .sheet-container { margin: 0; width: 210mm; height: 296mm; padding: 15mm 18mm; box-shadow: none; border-radius: 0; page-break-after: always; overflow: hidden; }
+              .bar-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .info { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; }
+              .summary { background-color: #0f172a !important; color: white !important; -webkit-print-color-adjust: exact; }
+              tr.combined-row { background-color: #fefacc !important; -webkit-print-color-adjust: exact; }
+              .grade-A-plus { background-color: #dcfce7 !important; -webkit-print-color-adjust: exact; }
+              .grade-A { background-color: #dbeafe !important; -webkit-print-color-adjust: exact; }
+              .grade-A-minus { background-color: #e0e7ff !important; -webkit-print-color-adjust: exact; }
+              .grade-B { background-color: #fef3c7 !important; -webkit-print-color-adjust: exact; }
+              .grade-C { background-color: #ffedd5 !important; -webkit-print-color-adjust: exact; }
+              .grade-D { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+              .grade-F { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; }
+            }
+            ${theme === 'bw' ? `
+            .school-meta { color: #334155 !important; }
+            .gpa-wheel-container svg circle { stroke: #e2e8f0 !important; }
+            .gpa-wheel-container svg circle:last-child { stroke: #000000 !important; }
+            .wheel-text { color: #000000 !important; }
+            .wheel-label { color: #475569 !important; }
+            .grade-pill { background: #ffffff !important; color: #000000 !important; border: 1.5px solid #000000 !important; font-weight: 850 !important; }
+            .summary { background: #ffffff !important; color: #000000 !important; border: 2.2px solid #000000 !important; }
+            .summary-label { color: #475569 !important; }
+            .summary-val { color: #000000 !important; }
+            .bar-value.obtained { color: #475569 !important; }
+            .bar-value.highest { color: #000000 !important; }
+            tr.combined-row { background-color: #f1f5f9 !important; color: #1e293b !important; }
+            ` : ''}
+          </style>
+        </head>
+        <body>
+          <div class="sheet-container">
+            <img src="https://z-cdn-media.chatglm.cn/files/81bcbc46-1942-4ae5-82f3-b47bcc90f921_Screenshot_2025-11-05_214918-removebg-preview.png?auth_key=1862791446-2232bbf5a92e4dd18e4bc625a9f1bb07-0-66301cdaf7f9b2d85a3f9478ecc8695f" alt="Watermark" class="watermark">
+            
+            <div class="header">
+              <img src="https://z-cdn-media.chatglm.cn/files/81bcbc46-1942-4ae5-82f3-b47bcc90f921_Screenshot_2025-11-05_214918-removebg-preview.png?auth_key=1862791446-2232bbf5a92e4dd18e4bc625a9f1bb07-0-66301cdaf7f9b2d85a3f9478ecc8695f" alt="School Logo" class="logo">
+              
+              <div class="gpa-wheel-container">
+                <svg width="72" height="72" viewBox="0 0 80 80" style="transform: rotate(-90deg);">
+                  <circle cx="40" cy="40" r="${radius}" fill="transparent" stroke="#f1f5f9" stroke-width="5" />
+                  <circle cx="40" cy="40" r="${radius}" fill="transparent" stroke="${wheelColor}" stroke-width="5"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${offsetVal}" stroke-linecap="round" />
+                </svg>
+                <div style="position: absolute; text-align: center;">
+                  <div class="wheel-text">${gpaVal.toFixed(2)}</div>
+                  <div class="wheel-label">GPA</div>
+                </div>
+              </div>
+              
+              <h1>Narayanganj Govt. Girls' High School</h1>
+              <p class="school-meta">Estd: 1967 | EIIN: 112425</p>
+              <h2>Model Test - 1 Marksheet</h2>
+              <p class="session-info">Academic Session: 2026</p>
+            </div>
+            
+            <div class="info">
+              <div class="info-item"><span class="info-label">Name:</span><span class="info-val">${student.name}</span></div>
+              <div class="info-item"><span class="info-label">Roll No:</span><span class="info-val">#${student.roll}</span></div>
+              <div class="info-item"><span class="info-label">Student Class:</span><span class="info-val">Class ${student.class}</span></div>
+              <div class="info-item"><span class="info-label">Section Name:</span><span class="info-val">Section ${student.section}</span></div>
+              <div class="info-item"><span class="info-label">Academic Shift:</span><span class="info-val">${student.shift} Shift</span></div>
+              <div class="info-item"><span class="info-label">Class Rank:</span><span class="info-val">Rank #${student.rank}</span></div>
+            </div>
+            
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr class="font-extrabold uppercase text-center text-7xs">
+                    <th style="text-align: left; padding-left: 15px; width: 33%">Subject Track</th>
+                    <th style="width: 11%">MCQ Marks</th>
+                    <th style="width: 11%">Creative</th>
+                    <th style="width: 11%">Obtained</th>
+                    <th style="background-color: rgb(245, 158, 11, 0.1); width: 11%">Highest</th>
+                    <th style="width: 11%">Letter Grade</th>
+                    <th class="last-col" style="width: 11%">Grade Point</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="text-align: left; padding-left: 15px;">Bangla</td>
+                    <td>${student.subjects.bangla.mcq}</td>
+                    <td>${student.subjects.bangla.creative}</td>
+                    <td style="font-weight: 800;">${student.subjects.bangla.total}</td>
+                    <td style="background-color: rgb(245, 158, 11, 0.05);">${student.highestMarks.bangla}</td>
+                    <td><span class="grade-pill grade-${student.subjects.bangla.grade.replace('+', '-plus')}">${student.subjects.bangla.grade}</span></td>
+                    <td class="last-col">${student.subjects.bangla.gp.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: left; padding-left: 15px;">English</td>
+                    <td>-</td>
+                    <td>${student.subjects.english.creative}</td>
+                    <td style="font-weight: 800;">${student.subjects.english.total}</td>
+                    <td style="background-color: rgb(245, 158, 11, 0.05);">${student.highestMarks.english}</td>
+                    <td><span class="grade-pill grade-${student.subjects.english.grade.replace('+', '-plus')}">${student.subjects.english.grade}</span></td>
+                    <td class="last-col">${student.subjects.english.gp.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: left; padding-left: 15px;">Mathematics</td>
+                    <td>${student.subjects.math.mcq}</td>
+                    <td>${student.subjects.math.creative}</td>
+                    <td style="font-weight: 800;">${student.subjects.math.total}</td>
+                    <td style="background-color: rgb(245, 158, 11, 0.05);">${student.highestMarks.math}</td>
+                    <td><span class="grade-pill grade-${student.subjects.math.grade.replace('+', '-plus')}">${student.subjects.math.grade}</span></td>
+                    <td class="last-col">${student.subjects.math.gp.toFixed(2)}</td>
+                  </tr>
+                  <tr class="combined-row">
+                    <td style="text-align: left; padding-left: 15px;">Science</td>
+                    <td>${student.subjects.science.mcq}</td>
+                    <td>${student.subjects.science.creative}</td>
+                    <td style="font-weight: 800;">${student.subjects.science.total}</td>
+                    <td style="background-color: rgb(245,158,11, 0.05);">${student.highestMarks.science}</td>
+                    <td rowspan="2" style="background-color: #ffffff; border-bottom: none;"><span class="grade-pill grade-${student.combinedGrade.grade.replace('+', '-plus')}">${student.combinedGrade.grade}</span></td>
+                    <td rowspan="2" class="last-col" style="background-color: #ffffff; border-bottom: none; font-weight: 800;">${student.combinedGrade.gp.toFixed(2)}</td>
+                  </tr>
+                  <tr class="combined-row">
+                    <td style="text-align: left; padding-left: 15px; border-bottom: none;">BGS</td>
+                    <td style="border-bottom: none;">${student.subjects.bgs.mcq}</td>
+                    <td style="border-bottom: none;">${student.subjects.bgs.creative}</td>
+                    <td style="border-bottom: none; font-weight: 800;">${student.subjects.bgs.total}</td>
+                    <td style="border-bottom: none; background-color: rgb(245,158,11, 0.05);">${student.highestMarks.bgs}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="summary">
+              <div class="summary-item"><span class="summary-label">Grand Total</span><span class="summary-val">${student.grandTotal} <span style="font-size: 11px; opacity: 0.7">/ 400</span></span></div>
+              <div class="summary-item"><span class="summary-label">GPA Score</span><span class="summary-val">${gpaVal.toFixed(2)}</span></div>
+              <div class="summary-item"><span class="summary-label">Overall Letter Grade</span><span class="summary-val">${student.finalGrade}</span></div>
+              <div class="summary-item"><span class="summary-label">Performance Remark</span><span class="summary-val" style="font-size: 11px;">${comment}</span></div>
+            </div>
+            
+            <div class="graph-section">
+              <div class="graph-title">Subject-wise Academic Performance Analysis</div>
+              <div class="chart">${graphsHTML}</div>
+            </div>
+            
+            <div class="signatures">
+              <div class="sign">
+                <img src="https://z-cdn-media.chatglm.cn/files/3074d433-8c22-4df3-97e2-9cf07df0d39b_chinmoy.png" alt="" class="sign-img" onerror="this.style.display='none'">
+                <div class="sign-line"></div>
+                <div class="sign-title">Class Teacher</div>
+              </div>
+              <div class="sign">
+                <img src="/head-sign.png" alt="Headmaster signature" class="sign-img" onerror="this.style.display='none'">
+                <div class="sign-line"></div>
+                <div class="sign-title">Headmaster</div>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    function downloadSingleMarksheet(stId) {
+      const student = computedResults.find(r => r.id === stId);
+      if (!student) return;
+
+      const activeThemeSelection = document.getElementById('res-theme-selector').value;
+      const rawHTML = compileSingleMarksheetHTML(student, activeThemeSelection);
+      const blob = new Blob([rawHTML], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `marksheet_roll_${student.roll}_${student.name.replace(/\s+/g, '_')}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function printActiveMarksheet() {
+      if (!activeStudentForPreview) return;
+      const rawHTML = compileSingleMarksheetHTML(activeStudentForPreview, activeModalTheme);
+      
+      const printTab = window.open('', '_blank');
+      if (printTab) {
+        printTab.document.write(rawHTML);
+        printTab.document.close();
+        printTab.focus();
+        setTimeout(() => {
+          printTab.print();
+        }, 600);
+      }
+    }
+
+    // Save tabular sheet file as excel-readable HTML table format (.xls)
+    function downloadTabulationSheet() {
+      const activeThemeStyleSel = document.getElementById('res-theme-selector').value;
+      
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">`;
+      html += `<head><meta charset="UTF-8"><title>Tabulation Ledger</title></head><body>`;
+      html += `<h2>Narayanganj Govt. Girls' High School - Tabulation Register Records</h2>`;
+      html += `<table border="1" style="font-weight: 750">`;
+      html += `<thead><tr>`;
+      html += `<th>Roll</th><th>Name</th><th>Class</th><th>Sec</th><th>Shift</th><th>Bangla</th><th>English</th><th>Math</th><th>Combined Sci+BGS</th><th>Grand Total</th><th>GPA</th><th>Grade</th>`;
+      html += `</tr></thead><tbody>`;
+
+      computedResults.forEach(student => {
+        html += `<tr>`;
+        html += `<td>${student.roll}</td>`;
+        html += `<td>${student.name}</td>`;
+        html += `<td>${student.class}</td>`;
+        html += `<td>${student.section}</td>`;
+        html += `<td>${student.shift}</td>`;
+        html += `<td>${student.subjects.bangla.total}</td>`;
+        html += `<td>${student.subjects.english.total}</td>`;
+        html += `<td>${student.subjects.math.total}</td>`;
+        html += `<td>${student.combinedGrade.total}</td>`;
+        html += `<td>${student.grandTotal}</td>`;
+        html += `<td>${student.gpa.toFixed(2)}</td>`;
+        html += `<td>${student.finalGrade}</td>`;
+        html += `</tr>`;
+      });
+      html += `</tbody></table></body></html>`;
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = `tabulation_register_report.xls`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+
+    // Window Startup Bootloader
+    window.onload = function() {
+      calculateResults();
+    };
+
+  </script>
+</body>
+</html>
